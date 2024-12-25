@@ -27,8 +27,7 @@ services:
     container_name: tradexpro_nginx
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - "8081:80"
     volumes:
       - ./:/var/www
       - ./docker/nginx/conf.d:/etc/nginx/conf.d
@@ -53,7 +52,7 @@ services:
       - --default-authentication-plugin=mysql_native_password
       - --log-bin-trust-function-creators=1
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - dbdata:/var/lib/mysql
     networks:
