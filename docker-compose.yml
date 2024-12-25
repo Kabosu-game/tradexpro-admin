@@ -27,10 +27,12 @@ services:
     container_name: tradexpro_nginx
     restart: unless-stopped
     ports:
-      - "8001:80"
+      - "80:80"
+      - "443:443"
     volumes:
       - ./:/var/www
       - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./docker/nginx/ssl:/etc/nginx/ssl
     networks:
       - tradexpro
     depends_on:
