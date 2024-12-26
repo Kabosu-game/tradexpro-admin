@@ -30,11 +30,22 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy application files
+# Copy composer files first
+COPY composer.json composer.lock ./
+
+# Install dependencies without running scripts and autoloader
+RUN composer install --no-scripts --no-autoloader --no-dev
+
+# Copy the rest of the application
 COPY --chown=www-data:www-data . .
 
-# Install dependencies
-RUN composer install --no-interaction --optimize-autoloader --no-dev
+# Create empty .env file to prevent errors during autoload
+RUN touch .env
+
+# Generate autoloader
+RUN composer dump-autoload --optimize --no-dev --no-scripts
+
+# Install and build frontend assets
 RUN npm ci && npm run build
 
 # Clean up
