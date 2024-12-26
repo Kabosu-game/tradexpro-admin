@@ -1,6 +1,8 @@
 FROM php:8.1-fpm
 
 ENV PHP_OPCACHE_ENABLE=1
+ENV NODE_ENV=production
+ENV HOME=/var/www/html
 
 USER root
 
@@ -37,10 +39,18 @@ COPY composer.json composer.lock ./
 RUN composer install --no-scripts --no-autoloader --no-dev
 
 # Copy the rest of the application
-COPY --chown=www-data:www-data . .
+COPY . .
 
 # Create empty .env file to prevent errors during autoload
 RUN touch .env
+
+# Set correct permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && mkdir -p /var/www/html/.npm \
+    && chown -R www-data:www-data /var/www/html/.npm
+
+# Switch to www-data user for npm operations
+USER www-data
 
 # Generate autoloader
 RUN composer dump-autoload --optimize --no-dev --no-scripts
@@ -49,13 +59,7 @@ RUN composer dump-autoload --optimize --no-dev --no-scripts
 RUN npm ci && npm run prod
 
 # Clean up
-RUN rm -rf /var/www/html/.npm /var/www/html/.composer/cache
-
-# Change ownership of our applications
-RUN chown -R www-data:www-data /var/www/html
-
-# Switch to non-root user
-USER www-data
+RUN rm -rf .npm
 
 # Expose port 9000 for PHP-FPM
 EXPOSE 9000
