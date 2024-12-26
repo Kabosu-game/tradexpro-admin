@@ -14,8 +14,11 @@ class VisualNumberFormat extends Migration
      */
     public function up()
     {
-        DB::unprepared('DROP function IF EXISTS visualNumberFormat;');
-        DB::unprepared("CREATE FUNCTION visualNumberFormat (number DECIMAL(19,8)) RETURNS varchar(20) DETERMINISTIC BEGIN IF INSTR(trim(number)+0, '.') = 0 THEN RETURN concat(trim(number)+0,'.00');  ELSE  RETURN trim(number)+0;  END IF; END");
+        // Skip for SQLite as it doesn't support stored functions
+        if (config('database.default') !== 'sqlite') {
+            DB::unprepared('DROP function IF EXISTS visualNumberFormat;');
+            DB::unprepared("CREATE FUNCTION visualNumberFormat (number DECIMAL(19,8)) RETURNS varchar(20) DETERMINISTIC BEGIN IF INSTR(trim(number)+0, '.') = 0 THEN RETURN concat(trim(number)+0,'.00');  ELSE  RETURN trim(number)+0;  END IF; END");
+        }
     }
 
     /**
@@ -25,6 +28,9 @@ class VisualNumberFormat extends Migration
      */
     public function down()
     {
-        DB::unprepared('DROP function IF EXISTS visualNumberFormat;');
+        // Skip for SQLite as it doesn't support stored functions
+        if (config('database.default') !== 'sqlite') {
+            DB::unprepared('DROP function IF EXISTS visualNumberFormat;');
+        }
     }
 }
