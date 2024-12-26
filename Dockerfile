@@ -25,7 +25,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
     && apt-get install -y nodejs \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
-    && npm install -g cross-env webpack webpack-cli
+    && npm install -g cross-env
 
 # Install composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
@@ -35,7 +35,6 @@ WORKDIR /var/www/html
 
 # Copy package files first
 COPY package*.json ./
-COPY composer.json composer.lock ./
 
 # Set correct permissions early
 RUN mkdir -p /var/www/html/.npm \
@@ -44,10 +43,13 @@ RUN mkdir -p /var/www/html/.npm \
 # Switch to www-data user for package installations
 USER www-data
 
-# Install npm dependencies and fix vulnerabilities
-RUN npm install && npm audit fix || true
+# Install npm dependencies
+RUN npm install
 
-# Install PHP dependencies
+# Copy composer files and install
+USER root
+COPY composer.json composer.lock ./
+USER www-data
 RUN composer install --no-scripts --no-autoloader --no-dev
 
 # Copy the rest of the application
