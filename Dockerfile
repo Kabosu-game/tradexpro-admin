@@ -33,31 +33,38 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy composer files first
+# Copy package files first
+COPY package*.json ./
 COPY composer.json composer.lock ./
 
-# Install dependencies without running scripts and autoloader
+# Set correct permissions early
+RUN mkdir -p /var/www/html/.npm \
+    && chown -R www-data:www-data /var/www/html
+
+# Switch to www-data user for package installations
+USER www-data
+
+# Install npm dependencies and fix vulnerabilities
+RUN npm ci \
+    && npm audit fix --force || true
+
+# Install PHP dependencies
 RUN composer install --no-scripts --no-autoloader --no-dev
 
 # Copy the rest of the application
+USER root
 COPY . .
+RUN chown -R www-data:www-data /var/www/html
+USER www-data
 
 # Create empty .env file to prevent errors during autoload
 RUN touch .env
 
-# Set correct permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && mkdir -p /var/www/html/.npm \
-    && chown -R www-data:www-data /var/www/html/.npm
-
-# Switch to www-data user for npm operations
-USER www-data
-
 # Generate autoloader
 RUN composer dump-autoload --optimize --no-dev --no-scripts
 
-# Install and build frontend assets
-RUN npm ci && npm run prod
+# Build frontend assets
+RUN npm run prod
 
 # Clean up
 RUN rm -rf .npm
