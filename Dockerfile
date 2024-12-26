@@ -1,39 +1,29 @@
 FROM php:8.1-fpm
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    zip \
-    unzip \
-    libzip-dev
+ENV PHP_OPCACHE_ENABLE=1
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+USER root
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+# Install Node.js
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get update \
+    && apt-get install -y nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Get latest Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Copy application files
+COPY --chown=www-data:www-data . /var/www/html
 
-# Set working directory
-WORKDIR /var/www
+# Switch to non-root user
+USER www-data
 
-# Copy existing application directory
-COPY . .
+# Install dependencies and build
+RUN npm ci \
+    && npm run build \
+    && rm -rf /var/www/html/.npm
 
-# Install dependencies
-RUN composer install --no-interaction --no-dev --optimize-autoloader
+# Install PHP dependencies
+RUN composer install --no-interaction --optimize-autoloader --no-dev
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www
-RUN chmod -R 755 /var/www/storage
-
-# Expose port 9000
-EXPOSE 9000
-
-CMD ["php-fpm"]
+# Remove composer cache
+RUN rm -rf /var/www/html/.composer/cache
