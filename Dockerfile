@@ -3,6 +3,7 @@ FROM php:8.1-fpm
 ENV PHP_OPCACHE_ENABLE=1
 ENV NODE_ENV=production
 ENV HOME=/var/www/html
+ENV PATH /var/www/html/node_modules/.bin:$PATH
 
 USER root
 
@@ -43,8 +44,8 @@ RUN mkdir -p /var/www/html/.npm \
 # Switch to www-data user for package installations
 USER www-data
 
-# Install npm dependencies
-RUN npm install
+# Install npm dependencies with specific PATH
+RUN npm install --no-optional && npm cache clean --force
 
 # Copy composer files and install
 USER root
@@ -64,8 +65,10 @@ RUN touch .env
 # Generate autoloader
 RUN composer dump-autoload --optimize --no-dev --no-scripts
 
-# Build frontend assets
-RUN npm run prod
+# Verify webpack is available and build frontend assets
+RUN ls -la node_modules/.bin/webpack && \
+    chmod +x node_modules/.bin/webpack && \
+    npm run prod
 
 # Clean up
 RUN rm -rf .npm
