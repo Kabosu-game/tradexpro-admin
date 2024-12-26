@@ -46,7 +46,7 @@ RUN touch .env
 RUN composer dump-autoload --optimize --no-dev --no-scripts
 
 # Install and build frontend assets
-RUN npm ci && npm run build
+RUN npm ci && npm run prod
 
 # Clean up
 RUN rm -rf /var/www/html/.npm /var/www/html/.composer/cache
