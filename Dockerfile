@@ -3,7 +3,6 @@ FROM php:8.1-fpm
 ENV PHP_OPCACHE_ENABLE=1
 ENV NODE_ENV=production
 ENV HOME=/var/www/html
-ENV PATH /var/www/html/node_modules/.bin:$PATH
 
 USER root
 
@@ -21,12 +20,12 @@ RUN apt-get update && apt-get install -y \
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
-# Install Node.js 16.x
+# Install Node.js 16.x and global npm packages
 RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
     && apt-get install -y nodejs \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
-    && npm install -g cross-env
+    && npm install -g cross-env webpack@4.41.2 webpack-cli@3.3.10
 
 # Install composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
@@ -44,8 +43,8 @@ RUN mkdir -p /var/www/html/.npm \
 # Switch to www-data user for package installations
 USER www-data
 
-# Install npm dependencies with specific PATH
-RUN npm install --no-optional && npm cache clean --force
+# Install npm dependencies
+RUN npm install --no-optional
 
 # Copy composer files and install
 USER root
@@ -65,10 +64,8 @@ RUN touch .env
 # Generate autoloader
 RUN composer dump-autoload --optimize --no-dev --no-scripts
 
-# Verify webpack is available and build frontend assets
-RUN ls -la node_modules/.bin/webpack && \
-    chmod +x node_modules/.bin/webpack && \
-    npm run prod
+# Build frontend assets
+RUN npm run prod
 
 # Clean up
 RUN rm -rf .npm
